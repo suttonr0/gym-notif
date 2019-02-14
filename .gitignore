@@ -1,1 +1,3 @@
-./idea
+.idea/
+venv/
+gym_notif.egg-info/
