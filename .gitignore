@@ -1,3 +1,4 @@
 .idea/
 venv/
 gym_notif.egg-info/
+__pycache__/
