@@ -2,7 +2,7 @@ import gym
 import pandas as pd
 from gym import error, spaces, utils
 from gym.utils import seeding
-from gym_notif.envs.mobile_notification import Notification
+from gym_notif.envs.mobile_notification import MobileNotification
 
 
 # NEED TO INSTALL ENVIRONMENT WITH "pip install -e ." IN PROJECT PARENT DIR
@@ -10,7 +10,6 @@ class NotifEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     CSV_FILE = "notif_user_2.csv"
-
 
     def __init__(self):
         # ----- Initialize environment variables -----
@@ -26,8 +25,10 @@ class NotifEnv(gym.Env):
         # Obtain action, appPackage, category and postedTimeOfDay
         df = pd.read_csv(self.CSV_FILE)
         notif_action = df.action  # you can also use df['column_name']
+        # Make a list of Notification objects
         for n in range(0, len(notif_action)):
-            self.notification_list.append(Notification(df.appPackage[n], df.category[n], df.postedTimeOfDay[n]))
+            self.notification_list.append(MobileNotification(df.action[n], df.appPackage[n], df.category[n],
+                                                             df.postedTimeOfDay[n]))
             print(self.notification_list[n])
 
         self.state = self.notification_list[0]  # Initialize to first value
@@ -59,14 +60,17 @@ class NotifEnv(gym.Env):
         # "Accepts an action and returns a tuple (observation, reward, done, info)."
         # Should take in the action, change the state dependent on that action, calculate
         # the reward and return the [self.state, self.reward, self.done, self.info]
+        if type(action) != bool:
+            print("ERROR: Incorrect type for 'action'. Requires type bool.")
+            return -1
         if self.done:
             return [self.state, self.reward, self.done, self.info]
         else:
             self.reward = 0
-            if action == "A1":
+            if action == self.notification_list[self.counter].action:
                 self.reward = 1
-                self.state = "AIR"
-            else:
+                self.state = "AIR"  # Can change state here if result was dependent on the reward
+            elif action:
                 print(self.notification_list[self.counter])
                 self.state = "GROUND"
             self.counter += 1
