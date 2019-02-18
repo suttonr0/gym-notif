@@ -18,7 +18,6 @@ class NotifEnv(gym.Env):
         self.info = 0  # Extra diagnostic info (can also be useful for learning)
         self.counter = 0  # A counter to use so that there's a limited number of iterations
         self.notification_list = []  # A list of Notification objects from the CSV file
-        self.total_states = 0  # The total number of different notification states
         self.previous_action = []  # The last action taken as input to the environment
 
         # ----- Load in CSV file -----
@@ -52,6 +51,20 @@ class NotifEnv(gym.Env):
 
         self.total_states = len(package_states) * len(category_states) * len(time_of_day_states)
         print("ENV: Total number of Notification states: " + str(self.total_states))
+
+        # Get One-Hot encodings for each category's values
+        print(pd.Series(package_states).str.get_dummies(', '))
+        print(pd.Series(category_states).str.get_dummies(', '))
+        print(pd.Series(time_of_day_states).str.get_dummies(', '))
+
+        # pd.Series(time_of_day_states).str.get_dummies(', ') is of pandas.core.frame.DataFrame
+        # Can be indexed by pd.Series(...)...["afternoon"], returning a
+        # pandas.core.series.Series with its one-hot encoding. This encoding can then be indexed as a normal array
+
+
+        # 0 = False (no user interation)
+        # 1 = True (user interaction)
+        self.action_space = spaces.Discrete(2)
 
     def step(self, action):
         # "Accepts an action and returns a tuple (observation, reward, done, info)."
