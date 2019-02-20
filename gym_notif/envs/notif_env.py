@@ -60,6 +60,7 @@ class NotifEnv(gym.Env):
         # 0 = False (no user interation)
         # 1 = True (user interaction)
         self.action_space = spaces.Discrete(2)
+        self.observation_space = spaces.Discrete(self.total_states)
 
         # TODO: How to take these 3 categories of onehot encodings and store as a
 
@@ -78,22 +79,21 @@ class NotifEnv(gym.Env):
             if action == self.notification_list[self.counter].action:
                 # If the action taken by the user matches the action provided by the RL system
                 self.reward = 1
-            elif action:
-                self.reward = -1
+            else:
+                self.reward = 0
             self.counter += 1
             # Update state
             self.state = self.notification_list[self.counter]
-            if self.counter > 9:
+            if self.counter > 90:  # In actual implementation, use number of instances
                 self.done = True
             self.previous_action = action
-            self.render()
+            # self.render()
         return [self.state, self.reward, self.done, self.info]
 
     def reset(self):
         self.state = self.notification_list[0]  # Initialize to first value
         self.reward = 0  # Initial reward of zero
         self.done = False  # We are not finished at the start
-        self.info = 0  # Extra diagnostic info (can also be useful for learning)
         self.counter = 0  # A counter to use so that there's a limited number of iterations
 
         return self.state
