@@ -16,9 +16,9 @@ class NotifEnv(gym.Env):
         self.reward = 0  # Initial reward of zero
         self.done = False  # We are not finished at the start
         self.info = {}  # Extra diagnostic info (can also be useful for learning)
-        self.counter = 0  # A counter to use so that there's a limited number of iterations
+
+        self.counter = 1  # A counter to limit the number of iterations. Represents the step number we're currently on
         self.notification_list = []  # A list of Notification objects from the CSV file
-        self.previous_action = []  # The last action taken as input to the environment
 
         # ----- Load in CSV file -----
         # Obtain action, appPackage, category and postedTimeOfDay
@@ -29,8 +29,9 @@ class NotifEnv(gym.Env):
             self.notification_list.append(MobileNotification(df.action[n], df.appPackage[n], df.category[n],
                                                              df.postedTimeOfDay[n]))
         self.state = self.notification_list[0]  # Initialize to first value
+        self.info['number_of_notifications'] = len(notif_action)
 
-        # Find all possible values for packages, categories and ToD
+        # ----- Find all possible values for packages, categories and ToD -----
         package_states = []
         category_states = []
         time_of_day_states = []
@@ -49,25 +50,24 @@ class NotifEnv(gym.Env):
         print("ENV: Total unique ToD States: ")
         print(time_of_day_states)
 
-        self.total_states = len(package_states) * len(category_states) * len(time_of_day_states)
-        print("ENV: Total number of Notification states: " + str(self.total_states))
+        total_states = len(package_states) * len(category_states) * len(time_of_day_states)
+        print("ENV: Total number of Notification states: " + str(total_states))
 
         self.info['package_states'] = package_states
         self.info['category_states'] = category_states
         self.info['time_of_day_states'] = time_of_day_states
 
-
         # 0 = False (no user interation)
         # 1 = True (user interaction)
         self.action_space = spaces.Discrete(2)
-        self.observation_space = spaces.Discrete(self.total_states)
 
-        # TODO: How to take these 3 categories of onehot encodings and store as a
+        # State space is 1-D with the value corresponding to the combination of notification features
+        self.observation_space = spaces.Discrete(total_states)
 
     def step(self, action):
         # "Accepts an action and returns a tuple (observation, reward, done, info)."
         # Should take in the action, change the state dependent on that action, calculate
-        # the reward and return the [self.state, self.reward, self.done, self.info]
+        # the reward and return [self.state, self.reward, self.done, self.info]
         if type(action) != bool:
             print("ENV: ERROR: Incorrect type for 'action'. Requires type bool.")
             return -1
@@ -81,25 +81,25 @@ class NotifEnv(gym.Env):
                 self.reward = 1
             else:
                 self.reward = 0
-            self.counter += 1
+
             # Update state
             self.state = self.notification_list[self.counter]
-            if self.counter > 90:  # In actual implementation, use number of instances
+            if self.counter > self.info['number_of_notifications'] - 1:
                 self.done = True
-            self.previous_action = action
             # self.render()
+            self.counter += 1
         return [self.state, self.reward, self.done, self.info]
 
     def reset(self):
         self.state = self.notification_list[0]  # Initialize to first value
         self.reward = 0  # Initial reward of zero
         self.done = False  # We are not finished at the start
-        self.counter = 0  # A counter to use so that there's a limited number of iterations
+        self.counter = 1  # A counter to limit the number of iterations. Represents the step number we're currently on
 
         return self.state
 
     def render(self, mode='human', close=False):
         if mode == 'human':
-            print("ENV: Current notification: {}\n\t with calculated reward: {}\n\t based on input action: {}".format(
-                self.state, self.reward, self.previous_action))
+            print("ENV: Current notification: {}\n\t with calculated reward: {}".format(
+                self.state, self.reward))
 
