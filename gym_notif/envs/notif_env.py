@@ -71,6 +71,8 @@ class NotifEnv(gym.Env):
         if type(action) != bool:
             print("ENV: ERROR: Incorrect type for 'action'. Requires type bool.")
             return -1
+        if self.counter > self.info['number_of_notifications'] - 1:
+            self.done = True
         if self.done:
             # Finished, just return data
             return [self.state, self.reward, self.done, self.info]
@@ -84,8 +86,7 @@ class NotifEnv(gym.Env):
 
             # Update state
             self.state = self.notification_list[self.counter]
-            if self.counter > self.info['number_of_notifications'] - 1:
-                self.done = True
+
             # self.render()
             self.counter += 1
         return [self.state, self.reward, self.done, self.info]
