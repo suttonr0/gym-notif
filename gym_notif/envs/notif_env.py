@@ -78,7 +78,7 @@ class NotifEnv(gym.Env):
             return [self.state, self.reward, self.done, self.info]
         else:
             self.reward = 0
-            if action == self.notification_list[self.counter].action:
+            if action == self.state.action:
                 # If the action taken by the user matches the action provided by the RL system
                 self.reward = 1
             else:
