@@ -1,4 +1,5 @@
 import gym
+import random
 import pandas as pd
 from gym import error, spaces, utils
 from gym.utils import seeding
@@ -26,9 +27,9 @@ class NotifEnv(gym.Env):
         notif_action = df.action  # you can also use df['column_name']
         # Make a list of Notification objects
         for n in range(0, len(notif_action)):
-            self.notification_list.append(MobileNotification(df.action[n], df.appPackage[n], df.category[n],
+            self.notification_list.append(MobileNotification(n, df.action[n], df.appPackage[n], df.category[n],
                                                              df.postedTimeOfDay[n]))
-        self.state = self.notification_list[0]  # Initialize to first value
+        self.state = self.notification_list[random.randint(0, len(self.notification_list)) - 1]  # Initialize to random value
         self.info['number_of_notifications'] = len(notif_action)
 
         # ----- Find all possible values for packages, categories and ToD -----
@@ -85,7 +86,7 @@ class NotifEnv(gym.Env):
                 self.reward = 0
 
             # Update state
-            self.state = self.notification_list[self.counter]
+            self.state = self.notification_list[random.randint(0, len(self.notification_list)) - 1]
 
             # self.render()
             self.counter += 1
