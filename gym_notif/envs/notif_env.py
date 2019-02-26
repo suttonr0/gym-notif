@@ -21,6 +21,11 @@ class NotifEnv(gym.Env):
         self.counter = 1  # A counter to limit the number of iterations. Represents the step number we're currently on
         self.notification_list = []  # A list of Notification objects from the CSV file
 
+        # Cross Validation Parameters
+        self.training = True
+        self.training_data = []  # Current set of training data for k-fold cross validation
+        self.testing_data = []  # Current set of testing data for k-fold cross validation
+
         # ----- Load in CSV file -----
         # Obtain action, appPackage, category and postedTimeOfDay
         df = pd.read_csv(self.CSV_FILE)
@@ -64,6 +69,9 @@ class NotifEnv(gym.Env):
 
         # State space is 1-D with the value corresponding to the combination of notification features
         self.observation_space = spaces.Discrete(total_states)
+
+        # Random shuffle the data list to prepare for 10-fold cross validation
+        random.shuffle(self.notification_list)
 
     def step(self, action):
         # "Accepts an action and returns a tuple (observation, reward, done, info)."
