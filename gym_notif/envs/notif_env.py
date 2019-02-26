@@ -34,7 +34,6 @@ class NotifEnv(gym.Env):
         for n in range(0, len(notif_action)):
             self.notification_list.append(MobileNotification(n, df.action[n], df.appPackage[n], df.category[n],
                                                              df.postedTimeOfDay[n]))
-        self.state = self.notification_list[random.randint(0, len(self.notification_list)) - 1]  # Initialize to random value
         self.info['number_of_notifications'] = len(notif_action)
 
         # ----- Find all possible values for packages, categories and ToD -----
@@ -80,7 +79,8 @@ class NotifEnv(gym.Env):
         if type(action) != bool:
             print("ENV: ERROR: Incorrect type for 'action'. Requires type bool.")
             return -1
-        if self.counter > self.info['number_of_notifications'] - 1:
+        if (self.training and self.counter > len(self.training_data) - 1) or \
+                (not self.training and self.counter > len(self.testing_data) - 1):
             self.done = True
         if self.done:
             # Finished, just return data
@@ -94,14 +94,20 @@ class NotifEnv(gym.Env):
                 self.reward = 0
 
             # Update state
-            self.state = self.notification_list[random.randint(0, len(self.notification_list)) - 1]
+            if self.training:
+                self.state = self.training_data[self.counter]
+            else:
+                self.state = self.testing_data[self.counter]
 
             # self.render()
             self.counter += 1
         return [self.state, self.reward, self.done, self.info]
 
     def reset(self):
-        self.state = self.notification_list[0]  # Initialize to first value
+        if self.training:
+            self.state = self.training_data[0]  # Initialize to first value
+        else:
+            self.state = self.testing_data[0]
         self.reward = 0  # Initial reward of zero
         self.done = False  # We are not finished at the start
         self.counter = 1  # A counter to limit the number of iterations. Represents the step number we're currently on
