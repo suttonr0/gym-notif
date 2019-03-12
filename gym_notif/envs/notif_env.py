@@ -1,6 +1,7 @@
 import gym
 import random
 import pandas as pd
+import os
 from gym import error, spaces, utils
 from gym.utils import seeding
 from gym_notif.envs.mobile_notification import MobileNotification
@@ -9,7 +10,7 @@ from gym_notif.envs.mobile_notification import MobileNotification
 # NEED TO INSTALL ENVIRONMENT WITH "pip install -e ." IN PROJECT PARENT DIR
 class NotifEnv(gym.Env):
     metadata = {'render.modes': ['human']}
-    CSV_FILE = "notif_user_2.csv"
+    CSV_FILE = "notif_user_2333.csv"
 
     def __init__(self):
         # ----- Initialize environment variables -----
@@ -28,7 +29,11 @@ class NotifEnv(gym.Env):
 
         # ----- Load in CSV file -----
         # Obtain action, appPackage, category and postedTimeOfDay
-        df = pd.read_csv(self.CSV_FILE)
+        try:
+            df = pd.read_csv(self.CSV_FILE)
+        except FileNotFoundError:
+            print("CSV file '{}' not found. Current working directory of {}".format(self.CSV_FILE, os.getcwd()))
+            exit(-1)
         notif_action = df.action  # you can also use df['column_name']
         # Make a list of Notification objects
         for n in range(0, len(notif_action)):
@@ -61,6 +66,7 @@ class NotifEnv(gym.Env):
         self.info['package_states'] = package_states
         self.info['category_states'] = category_states
         self.info['time_of_day_states'] = time_of_day_states
+        self.info['total_number_of_states'] = total_states
 
         # 0 = False (no user interation)
         # 1 = True (user interaction)
@@ -95,10 +101,11 @@ class NotifEnv(gym.Env):
 
             # Update state
             if self.training:
-                self.state = self.training_data[self.counter]
+                # self.state = self.training_data[self.counter]
+                self.state = random.choice(self.training_data)
             else:
                 self.state = self.testing_data[self.counter]
-
+                # self.state = random.choice(self.testing_data)
             # self.render()
             self.counter += 1
         return [self.state, self.reward, self.done, self.info]
