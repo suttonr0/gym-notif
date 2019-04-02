@@ -10,7 +10,7 @@ from gym_notif.envs.mobile_notification import MobileNotification
 # NEED TO INSTALL ENVIRONMENT WITH "pip install -e ." IN PROJECT PARENT DIR
 class NotifEnv(gym.Env):
     metadata = {'render.modes': ['human']}
-    CSV_FILE = "notif_user_2333.csv"
+    CSV_FILE = "csv_files/5000Balanced.csv"
 
     def __init__(self):
         # ----- Initialize environment variables -----
@@ -26,13 +26,15 @@ class NotifEnv(gym.Env):
         self.training = True
         self.training_data = []  # Current set of training data for k-fold cross validation
         self.testing_data = []  # Current set of testing data for k-fold cross validation
+        self.training_sample_space = []  # Remaining unused training data for k-fold cross validation
+        self.testing_sample_space = []  # Remaining unused testing data for k-fold cross validation
 
         # ----- Load in CSV file -----
         # Obtain action, appPackage, category and postedTimeOfDay
         try:
             df = pd.read_csv(self.CSV_FILE)
         except FileNotFoundError:
-            print("CSV file '{}' not found. Current working directory of {}".format(self.CSV_FILE, os.getcwd()))
+            print("CSV file '{}' not found. Must be in current working directory of {}".format(self.CSV_FILE, os.getcwd()))
             exit(-1)
         notif_action = df.action  # you can also use df['column_name']
         # Make a list of Notification objects
@@ -53,6 +55,7 @@ class NotifEnv(gym.Env):
             if item.postedTimeOfDay not in time_of_day_states:
                 time_of_day_states.append(item.postedTimeOfDay)
 
+        print("ENV: Number of Notifications Imported: {}".format(len(self.notification_list)))
         print("ENV: Total unique Package States: ")
         print(package_states)
         print("ENV: Total unique Category States: ")
@@ -101,20 +104,20 @@ class NotifEnv(gym.Env):
 
             # Update state
             if self.training:
-                # self.state = self.training_data[self.counter]
-                self.state = random.choice(self.training_data)
+                self.state = self.training_data[self.counter]  # Can iterate linearly since data is shuffled on reset()
             else:
-                self.state = self.testing_data[self.counter]
-                # self.state = random.choice(self.testing_data)
+                self.state = self.testing_data[self.counter]  # Can iterate linearly since data is shuffled on reset()
             # self.render()
             self.counter += 1
         return [self.state, self.reward, self.done, self.info]
 
     def reset(self):
         if self.training:
-            self.state = self.training_data[0]  # Initialize to first value
+            random.shuffle(self.training_data)
+            self.state = self.training_data[0]  # Initialize state to first value
         else:
-            self.state = self.testing_data[0]
+            random.shuffle(self.testing_data)
+            self.state = self.testing_data[0]  # Initialize state to first value
         self.reward = 0  # Initial reward of zero
         self.done = False  # We are not finished at the start
         self.counter = 1  # A counter to limit the number of iterations. Represents the step number we're currently on
