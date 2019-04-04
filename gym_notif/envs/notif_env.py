@@ -10,7 +10,7 @@ from gym_notif.envs.mobile_notification import MobileNotification
 # NEED TO INSTALL ENVIRONMENT WITH "pip install -e ." IN PROJECT PARENT DIR
 class NotifEnv(gym.Env):
     metadata = {'render.modes': ['human']}
-    CSV_FILE = "csv_files/5000Balanced.csv"
+    CSV_FILE = "csv_files/1000Balanced.csv"
 
     def __init__(self):
         # ----- Initialize environment variables -----
@@ -21,6 +21,13 @@ class NotifEnv(gym.Env):
 
         self.counter = 1  # A counter to limit the number of iterations. Represents the step number we're currently on
         self.notification_list = []  # A list of Notification objects from the CSV file
+
+        # Feature number corresponds to number of feature types in use
+        # 1. Package
+        # 2. Package, Category
+        # 3. Package, Category, Time of Day
+        # 4. Package, Category, Time of Day, Day of Week
+        self.feat_number = 1
 
         # Cross Validation Parameters
         self.training = True
@@ -37,39 +44,52 @@ class NotifEnv(gym.Env):
             print("CSV file '{}' not found. Must be in current working directory of {}".format(self.CSV_FILE, os.getcwd()))
             exit(-1)
         notif_action = df.action  # you can also use df['column_name']
-        # Make a list of Notification objects
+        # Make a list of Notification objects with associated user action values
         for n in range(0, len(notif_action)):
             self.notification_list.append(MobileNotification(n, df.action[n], df.appPackage[n], df.category[n],
-                                                             df.postedTimeOfDay[n]))
+                                                             df.postedTimeOfDay[n], df.postedDayOfWeek[n]))
         self.info['number_of_notifications'] = len(notif_action)
 
         # ----- Find all possible values for packages, categories and ToD -----
         package_states = []
         category_states = []
         time_of_day_states = []
+        day_of_week_states = []
         for item in self.notification_list:
-            if item.appPackage not in package_states:
-                package_states.append(item.appPackage)
-            if item.category not in category_states:
-                category_states.append(item.category)
             if item.postedTimeOfDay not in time_of_day_states:
                 time_of_day_states.append(item.postedTimeOfDay)
+            if item.category not in category_states:
+                category_states.append(item.category)
+            if item.appPackage not in package_states:
+                package_states.append(item.appPackage)
+            if item.postedDayOfWeek not in day_of_week_states:
+                day_of_week_states.append(item.postedDayOfWeek)
 
         print("ENV: Number of Notifications Imported: {}".format(len(self.notification_list)))
+
+        print("Features in use:")
+        self.info['package_states'] = package_states
+        total_states = len(package_states)
         print("ENV: Total unique Package States: ")
         print(package_states)
-        print("ENV: Total unique Category States: ")
-        print(category_states)
-        print("ENV: Total unique ToD States: ")
-        print(time_of_day_states)
+        if self.feat_number >= 2:
+            self.info['category_states'] = category_states
+            total_states *= len(category_states)
+            print("ENV: Total unique Category States: ")
+            print(category_states)
+        if self.feat_number >= 3:
+            self.info['time_of_day_states'] = time_of_day_states
+            total_states *= len(time_of_day_states)
+            print("ENV: Total unique ToD States: ")
+            print(time_of_day_states)
+        if self.feat_number >= 4:
+            self.info['day_of_week_states'] = day_of_week_states
+            total_states *= len(day_of_week_states)
+            print("ENV: Total unique DoW States: ")
+            print(day_of_week_states)
 
-        total_states = len(package_states) * len(category_states) * len(time_of_day_states)
-        print("ENV: Total number of Notification states: " + str(total_states))
-
-        self.info['package_states'] = package_states
-        self.info['category_states'] = category_states
-        self.info['time_of_day_states'] = time_of_day_states
         self.info['total_number_of_states'] = total_states
+        print("ENV: Total number of Notification states in use: " + str(total_states))
 
         # 0 = False (no user interation)
         # 1 = True (user interaction)
@@ -112,6 +132,8 @@ class NotifEnv(gym.Env):
         return [self.state, self.reward, self.done, self.info]
 
     def reset(self):
+        # Reset should be called at the start of each training / testing episode to randomize the dataset order and
+        # reset the parameter values
         if self.training:
             random.shuffle(self.training_data)
             self.state = self.training_data[0]  # Initialize state to first value
