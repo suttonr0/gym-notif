@@ -10,7 +10,7 @@ from gym_notif.envs.mobile_notification import MobileNotification
 # NEED TO INSTALL ENVIRONMENT WITH "pip install -e ." IN PROJECT PARENT DIR
 class NotifEnv(gym.Env):
     metadata = {'render.modes': ['human']}
-    CSV_FILE = "csv_files/5000Balanced.csv"
+    CSV_FILE = "csv_files/50Balanced.csv"  # CHANGE TO INPUT CSV PATH FROM PWD OF PROJECT USING THIS ENVIRONMENT
 
     def __init__(self):
         # ----- Initialize environment variables -----
